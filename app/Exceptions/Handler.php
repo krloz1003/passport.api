@@ -4,6 +4,7 @@ namespace App\Exceptions;
 
 use Exception;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Laravel\Passport\Exceptions\MissingScopeException;
 
 class Handler extends ExceptionHandler
 {
@@ -46,6 +47,25 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
-        return parent::render($request, $exception);
+	    if ($request->wantsJson()) {
+		    if($exception instanceof MissingScopeException){
+			    $response = [
+				    'errors' => 'Sorry, something went wrong.'
+			    ];
+
+			    if (env('APP_DEBUG')) {
+				    $response['message'] = $exception->getMessage();
+			    }
+
+			    $status = 403; //forbidden
+
+			    if ($this->isHttpException($exception)) {
+				    $status = $exception->getCode();
+			    }
+			    return response()->json($response, $status);
+		    }
+	    }
+
+	    return parent::render($request, $exception);
     }
 }
